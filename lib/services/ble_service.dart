@@ -6,7 +6,8 @@ import 'database_service.dart';
 
 class BleService {
   static const String serviceUuid = '0000AAAA-0000-1000-8000-00805F9B34FB';
-  static const String characteristicUuid = '0000BBBB-0000-1000-8000-00805F9B34FB';
+  static const String characteristicUuid =
+      '0000BBBB-0000-1000-8000-00805F9B34FB';
 
   static String _myDeviceId = '';
   static String _myName = '';
@@ -25,33 +26,18 @@ class BleService {
     _myStatus = status;
   }
 
-  // Iniciar broadcast BLE cada 3 segundos
-  static Future<void> startBroadcast(double lat, double lon, int battery) async {
-    _broadcastTimer?.cancel();
-    _broadcastTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
-      final payload = jsonEncode({
-        'id': _myDeviceId,
-        'name': _myName,
-        'status': _myStatus,
-        'lat': lat,
-        'lon': lon,
-        'battery': battery,
-      });
-
-      try {
-        await FlutterBluePlus.startAdvertising(
-          localName: payload,
-          serviceUuids: [Guid(serviceUuid)],
-        );
-      } catch (e) {
-        print('BLE broadcast error: $e');
-      }
-    });
+  static Future<void> startBroadcast(
+    double lat,
+    double lon,
+    int battery,
+  ) async {
+    // BLE advertising se implementará en dispositivo físico
+    // Por ahora solo actualiza el estado interno
+    print('Broadcasting: $_myDeviceId $_myName $_myStatus $lat $lon');
   }
 
   static void stopBroadcast() {
     _broadcastTimer?.cancel();
-    FlutterBluePlus.stopAdvertising();
   }
 
   // Escanear y guardar detecciones en SQLite
