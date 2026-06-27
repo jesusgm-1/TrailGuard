@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/member.dart';
 import 'database_service.dart';
+import 'package:vibration/vibration.dart';
 
 class BleService {
   static const String serviceUuid = '0000AAAA-0000-1000-8000-00805F9B34FB';
@@ -26,15 +27,16 @@ class BleService {
     _myStatus = status;
   }
 
-  static Future<void> startBroadcast(
-    double lat,
-    double lon,
-    int battery,
-  ) async {
-    // BLE advertising se implementará en dispositivo físico
-    // Por ahora solo actualiza el estado interno
-    print('Broadcasting: $_myDeviceId $_myName $_myStatus $lat $lon');
+  static Future<void> handleSosAlert(Member member) async {
+  if (member.status != 'SOS') return;
+
+  if (await Vibration.hasVibrator() ?? false) {
+    Vibration.vibrate(
+      pattern: [0, 500, 200, 500, 200, 500],
+      intensities: [0, 255, 0, 255, 0, 255],
+    );
   }
+}
 
   static void stopBroadcast() {
     _broadcastTimer?.cancel();
@@ -66,7 +68,7 @@ class BleService {
 
           // Alerta inmediata si es SOS
           if (member.status == 'SOS') {
-            onDetected(member);
+            handleSosAlert(member);
           }
         } catch (e) {
           // Paquete BLE no es nuestro, ignorar
