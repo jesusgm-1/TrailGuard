@@ -15,7 +15,7 @@ class _SosScreenState extends State<SosScreen> {
   void _toggleSos() {
     HapticFeedback.heavyImpact();
     setState(() => _sosActive = !_sosActive);
-    BleService.setStatus(_sosActive ? 'SOS' : 'OK');
+    TrailBleService.setStatus(_sosActive ? 'SOS' : 'OK');
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -61,7 +61,7 @@ class _SosScreenState extends State<SosScreen> {
                             color: Colors.red.withOpacity(0.6),
                             blurRadius: 30,
                             spreadRadius: 10,
-                          )
+                          ),
                         ]
                       : [],
                 ),

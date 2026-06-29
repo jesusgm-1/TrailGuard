@@ -6,6 +6,8 @@ import 'services/database_service.dart';
 import 'services/gps_service.dart';
 import 'models/member.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'services/ble_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,15 +62,17 @@ class _MainNavigationState extends State<MainNavigation> {
       // Cada 4 registros = un minuto distinto (4 personas x minuto)
       final minuteOffset = (i ~/ 4) * 60000;
 
-      await DatabaseService.insertDetection(Member(
-        deviceId: c['device_id'],
-        name: c['name'],
-        status: 'OK',
-        latitude: c['lat'],
-        longitude: c['lon'],
-        battery: 80 - i * 2,
-        timestamp: now - minuteOffset,
-      ));
+      await DatabaseService.insertDetection(
+        Member(
+          deviceId: c['device_id'],
+          name: c['name'],
+          status: 'OK',
+          latitude: c['lat'],
+          longitude: c['lon'],
+          battery: 80 - i * 2,
+          timestamp: now - minuteOffset,
+        ),
+      );
     }
 
     if (mounted) {
@@ -86,23 +90,52 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _startMissingCheck();
+    _checkBle();
+    _startBle();
+  }
+
+  Future<void> _checkBle() async {
+    final isSupported = await FlutterBluePlus.isSupported;
+    final adapterState = await FlutterBluePlus.adapterState.first;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('BLE: $isSupported | Estado: $adapterState'),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  Future<void> _startBle() async {
+    // Inicializa con ID único y nombre
+    TrailBleService.init(
+      'DEV_${DateTime.now().millisecondsSinceEpoch}',
+      'Mi Nombre',
+    );
+
+    // Inicia broadcast con coordenadas iniciales (0,0 hasta tener GPS real)
+    await TrailBleService.startBroadcast(0.0, 0.0, 100);
+
+    // Inicia scan continuo y guarda detecciones
+    TrailBleService.startContinuousScan((member) {
+      setState(() {}); // refresca UI al detectar miembro
+    });
   }
 
   void _startMissingCheck() {
-  Stream.periodic(const Duration(minutes: 1)).listen((_) async {
-    final missing = await DatabaseService.getMissingDevices();
-    if (missing.isNotEmpty && mounted) {
-      HapticFeedback.heavyImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('⚠️ Sin señal: ${missing.join(', ')}'),
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    }
-  });
-}
+    Stream.periodic(const Duration(minutes: 1)).listen((_) async {
+      final missing = await DatabaseService.getMissingDevices();
+      if (missing.isNotEmpty && mounted) {
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Sin señal: ${missing.join(', ')}'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
