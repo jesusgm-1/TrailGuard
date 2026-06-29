@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/member.dart';
 import 'database_service.dart';
-import 'package:vibration/vibration.dart';
+import 'package:flutter/services.dart';
 
 class BleService {
   static const String serviceUuid = '0000AAAA-0000-1000-8000-00805F9B34FB';
@@ -28,15 +28,9 @@ class BleService {
   }
 
   static Future<void> handleSosAlert(Member member) async {
-  if (member.status != 'SOS') return;
-
-  if (await Vibration.hasVibrator() ?? false) {
-    Vibration.vibrate(
-      pattern: [0, 500, 200, 500, 200, 500],
-      intensities: [0, 255, 0, 255, 0, 255],
-    );
+    if (member.status != 'SOS') return;
+    HapticFeedback.heavyImpact();
   }
-}
 
   static void stopBroadcast() {
     _broadcastTimer?.cancel();

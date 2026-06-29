@@ -5,6 +5,7 @@ import 'screens/sos_screen.dart';
 import 'services/database_service.dart';
 import 'services/gps_service.dart';
 import 'models/member.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,6 +81,28 @@ class _MainNavigationState extends State<MainNavigation> {
       setState(() {}); // refresca
     }
   }
+
+  @override
+  void initState() {
+    super.initState();
+    _startMissingCheck();
+  }
+
+  void _startMissingCheck() {
+  Stream.periodic(const Duration(minutes: 1)).listen((_) async {
+    final missing = await DatabaseService.getMissingDevices();
+    if (missing.isNotEmpty && mounted) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Sin señal: ${missing.join(', ')}'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
