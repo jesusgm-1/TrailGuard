@@ -64,6 +64,20 @@ class _MainNavigationState extends State<MainNavigation> {
     final deviceId = 'DEV_${DateTime.now().millisecondsSinceEpoch}';
     TrailBleService.init(deviceId, widget.userName);
 
+    // Insertar propio dispositivo en SQLite al arrancar
+    final position = await GpsService.getCurrentPosition();
+    await DatabaseService.insertDetection(
+      Member(
+        deviceId: deviceId,
+        name: widget.userName,
+        status: 'OK',
+        latitude: position?.latitude ?? 0.0,
+        longitude: position?.longitude ?? 0.0,
+        battery: 100,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+
     // Inicia con coordenadas 0,0 y actualiza con GPS real
     await TrailBleService.startBroadcast(0.0, 0.0, 100);
 
@@ -143,13 +157,6 @@ class _MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Mapa'),
           BottomNavigationBarItem(icon: Icon(Icons.sos), label: 'SOS'),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _runSimulation,
-        backgroundColor: Colors.green[800],
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.play_arrow),
-        label: const Text('Simular'),
       ),
     );
   }
