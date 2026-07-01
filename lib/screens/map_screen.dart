@@ -42,7 +42,10 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Convierte lat/lon a puntos cartesianos relativos
-  List<ScatterSpot> _toSpots(List<Map<String, dynamic>> members, int colorIndex) {
+  List<ScatterSpot> _toSpots(
+    List<Map<String, dynamic>> members,
+    int colorIndex,
+  ) {
     return members.map((m) {
       return ScatterSpot(
         (m['longitude'] as double) * 1000 % 10,
@@ -61,17 +64,24 @@ class _MapScreenState extends State<MapScreen> {
       return const Center(child: Text('Sin datos para este minuto'));
     }
 
-    // Un ScatterSpot por persona con color distinto
     final spots = <ScatterSpot>[];
     for (int i = 0; i < members.length; i++) {
-      spots.addAll(_toSpots([members[i]], i));
+      spots.add(
+        ScatterSpot(
+          (members[i]['longitude'] as double) * 1000 % 10,
+          (members[i]['latitude'] as double) * 1000 % 10,
+          dotPainter: FlDotCirclePainter(
+            radius: 8,
+            color: _colors[i % _colors.length],
+          ),
+        ),
+      );
     }
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Leyenda
           Wrap(
             spacing: 12,
             children: List.generate(members.length, (i) {
@@ -119,10 +129,13 @@ class _MapScreenState extends State<MapScreen> {
                   touchTooltipData: ScatterTouchTooltipData(
                     getTooltipItems: (spot) {
                       final idx = spots.indexOf(spot);
-                      if (idx < members.length) {
+                      if (idx >= 0 && idx < members.length) {
                         return ScatterTooltipItem(
                           members[idx]['name'],
-                          textStyle: const TextStyle(color: Colors.white),
+                          textStyle: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         );
                       }
                       return null;
@@ -131,6 +144,27 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
+          ),
+          // Nombres debajo del plot
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 16,
+            children: List.generate(members.length, (i) {
+              return Chip(
+                avatar: CircleAvatar(
+                  backgroundColor: _colors[i % _colors.length],
+                  child: Text(
+                    members[i]['name'][0],
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+                label: Text(
+                  '${members[i]['name']} '
+                  '(${(members[i]['latitude'] as double).toStringAsFixed(4)}, '
+                  '${(members[i]['longitude'] as double).toStringAsFixed(4)})',
+                ),
+              );
+            }),
           ),
         ],
       ),
