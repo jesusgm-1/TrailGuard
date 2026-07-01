@@ -37,6 +37,7 @@ dependencies:
   fl_chart: ^0.69.0
   permission_handler: ^11.3.1
   ble_peripheral: ^2.4.0
+  shared_preferences: ^2.3.0
 
 
   # The following adds the Cupertino Icons font to your application.
