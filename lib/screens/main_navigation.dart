@@ -63,7 +63,19 @@ class _MainNavigationState extends State<MainNavigation> {
   Future<void> _startBle() async {
     final deviceId = 'DEV_${DateTime.now().millisecondsSinceEpoch}';
     TrailBleService.init(deviceId, widget.userName);
+
+    // Inicia con coordenadas 0,0 y actualiza con GPS real
     await TrailBleService.startBroadcast(0.0, 0.0, 100);
+
+    // Escucha stream de GPS y actualiza broadcast
+    GpsService.positionStream().listen((position) async {
+      await TrailBleService.startBroadcast(
+        position.latitude,
+        position.longitude,
+        100,
+      );
+    });
+
     TrailBleService.startContinuousScan((member) {
       if (mounted) setState(() {});
     });
