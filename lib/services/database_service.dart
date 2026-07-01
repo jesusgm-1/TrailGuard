@@ -49,9 +49,12 @@ class DatabaseService {
   }
 
   // Obtener posición promedio por miembro para un minuto dado
-  static Future<List<Map<String, dynamic>>> getAveragePositions(int bucket) async {
+  static Future<List<Map<String, dynamic>>> getAveragePositions(
+    int bucket,
+  ) async {
     final db = await database;
-    return db.rawQuery('''
+    return db.rawQuery(
+      '''
       SELECT
         device_id,
         name,
@@ -61,7 +64,9 @@ class DatabaseService {
       FROM detections
       WHERE timestamp / 60000 = ?
       GROUP BY device_id
-    ''', [bucket]);
+    ''',
+      [bucket],
+    );
   }
 
   // Última detección por dispositivo (para home screen)
@@ -80,12 +85,20 @@ class DatabaseService {
   static Future<List<String>> getMissingDevices() async {
     final db = await database;
     final cutoff = DateTime.now().millisecondsSinceEpoch - 600000;
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT device_id, name, MAX(timestamp) AS last_seen
       FROM detections
       GROUP BY device_id
       HAVING last_seen < ?
-    ''', [cutoff]);
+    ''',
+      [cutoff],
+    );
     return result.map((r) => r['name'] as String).toList();
+  }
+
+  static Future<void> clearAll() async {
+    final db = await database;
+    await db.delete('detections');
   }
 }

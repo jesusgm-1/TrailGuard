@@ -7,6 +7,7 @@ import 'services/database_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseService.database;
+  await DatabaseService.clearAll(); // limpia datos viejos
   runApp(const TrailGuardApp());
 }
 
@@ -58,8 +59,6 @@ class _SplashRouterState extends State<SplashRouter> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
