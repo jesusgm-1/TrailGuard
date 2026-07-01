@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'sos_screen.dart';
@@ -30,9 +31,20 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
+    _requestPermissions();
     _startMissingCheck();
     _checkBle();
     _startBle();
+  }
+
+  Future<void> _requestPermissions() async {
+    await [
+      Permission.bluetooth,
+      Permission.bluetoothScan,
+      Permission.bluetoothAdvertise,
+      Permission.bluetoothConnect,
+      Permission.locationWhenInUse,
+    ].request();
   }
 
   Future<void> _checkBle() async {
@@ -82,15 +94,17 @@ class _MainNavigationState extends State<MainNavigation> {
     for (int i = 0; i < coords.length; i++) {
       final c = coords[i];
       final minuteOffset = (i ~/ 4) * 60000;
-      await DatabaseService.insertDetection(Member(
-        deviceId: c['device_id'],
-        name: c['name'],
-        status: 'OK',
-        latitude: c['lat'],
-        longitude: c['lon'],
-        battery: 80 - i * 2,
-        timestamp: now - minuteOffset,
-      ));
+      await DatabaseService.insertDetection(
+        Member(
+          deviceId: c['device_id'],
+          name: c['name'],
+          status: 'OK',
+          latitude: c['lat'],
+          longitude: c['lon'],
+          battery: 80 - i * 2,
+          timestamp: now - minuteOffset,
+        ),
+      );
     }
 
     if (mounted) {
