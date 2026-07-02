@@ -5,6 +5,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
 import 'package:ble_peripheral/ble_peripheral.dart' as peripheral;
 import '../models/member.dart';
 import 'database_service.dart';
+import 'package:flutter/foundation.dart';
 
 class TrailBleService {
   static const String serviceUuid = '0000AAAA-0000-1000-8000-00805F9B34FB';
@@ -59,6 +60,17 @@ class TrailBleService {
     int battery,
   ) async {
     await initPeripheral();
+    // Verificar estado del advertising
+    peripheral.BlePeripheral.setAdvertisingStatusUpdateCallback((
+      bool advertising,
+      String? error,
+    ) {
+      if (error != null) {
+        debugPrint('BLE advertising error: $error');
+      } else {
+        debugPrint('BLE advertising activo: $advertising');
+      }
+    });
     _broadcastTimer?.cancel();
     _broadcastTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
       final payload = jsonEncode({

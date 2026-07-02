@@ -64,7 +64,6 @@ class _MainNavigationState extends State<MainNavigation> {
     final deviceId = 'DEV_${DateTime.now().millisecondsSinceEpoch}';
     TrailBleService.init(deviceId, widget.userName);
 
-    // Insertar propio dispositivo en SQLite al arrancar
     final position = await GpsService.getCurrentPosition();
     await DatabaseService.insertDetection(
       Member(
@@ -78,16 +77,23 @@ class _MainNavigationState extends State<MainNavigation> {
       ),
     );
 
-    // Inicia con coordenadas 0,0 y actualiza con GPS real
-    await TrailBleService.startBroadcast(0.0, 0.0, 100);
+    await TrailBleService.startBroadcast(
+      position?.latitude ?? 0.0,
+      position?.longitude ?? 0.0,
+      100,
+    );
 
-    // Escucha stream de GPS y actualiza broadcast
-    GpsService.positionStream().listen((position) async {
-      await TrailBleService.startBroadcast(
-        position.latitude,
-        position.longitude,
-        100,
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📡 Broadcast BLE iniciado'),
+          duration: Duration(seconds: 3),
+        ),
       );
+    }
+
+    GpsService.positionStream().listen((pos) async {
+      await TrailBleService.startBroadcast(pos.latitude, pos.longitude, 100);
     });
 
     TrailBleService.startContinuousScan((member) {
