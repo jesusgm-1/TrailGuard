@@ -6,6 +6,7 @@ import 'package:ble_peripheral/ble_peripheral.dart' as peripheral;
 import '../models/member.dart';
 import 'database_service.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 
 class TrailBleService {
   static const String serviceUuid = '0000AAAA-0000-1000-8000-00805F9B34FB';
@@ -57,37 +58,63 @@ class TrailBleService {
   static Future<void> startBroadcast(
     double lat,
     double lon,
-    int battery,
-  ) async {
+    int battery, {
+    Function(bool, String?)? onStatus,
+  }) async {
     await initPeripheral();
-    // Verificar estado del advertising
+
     peripheral.BlePeripheral.setAdvertisingStatusUpdateCallback((
       bool advertising,
       String? error,
     ) {
-      if (error != null) {
-        debugPrint('BLE advertising error: $error');
-      } else {
-        debugPrint('BLE advertising activo: $advertising');
-      }
+      debugPrint('BLE: $advertising | $error');
+      onStatus?.call(advertising, error);
     });
+
     _broadcastTimer?.cancel();
     _broadcastTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
       final payload = jsonEncode({
-        'id': _myDeviceId,
-        'name': _myName,
-        'status': _myStatus,
-        'lat': lat,
-        'lon': lon,
-        'battery': battery,
+        'i': _myDeviceId.substring(
+          _myDeviceId.length - 4,
+        ), // solo últimos 4 chars
+        'n': _myName.length > 8
+            ? _myName.substring(0, 8)
+            : _myName, // max 8 chars
+        's': _myStatus == 'SOS' ? 1 : 0, // 1 bit
+        'la': double.parse(lat.toStringAsFixed(4)), // menos decimales
+        'lo': double.parse(lon.toStringAsFixed(4)),
+        'b': battery,
       });
       try {
+        await peripheral.BlePeripheral.stopAdvertising();
+
+        final latInt = (lat * 10000).toInt();
+        final lonInt = (lon * 10000).toInt();
+        final shortName = _myName.length > 6
+            ? _myName.substring(0, 6)
+            : _myName;
+
         await peripheral.BlePeripheral.startAdvertising(
           services: [serviceUuid],
-          localName: payload,
+          localName: shortName,
+          manufacturerData: peripheral.ManufacturerData(
+            manufacturerId: 0x1234,
+            data: Uint8List.fromList([
+              _myStatus == 'SOS' ? 1 : 0,
+              (latInt >> 24) & 0xFF,
+              (latInt >> 16) & 0xFF,
+              (latInt >> 8) & 0xFF,
+              latInt & 0xFF,
+              (lonInt >> 24) & 0xFF,
+              (lonInt >> 16) & 0xFF,
+              (lonInt >> 8) & 0xFF,
+              lonInt & 0xFF,
+              battery,
+            ]),
+          ),
         );
       } catch (e) {
-        print('BLE broadcast error: $e');
+        debugPrint('BLE broadcast error: $e');
       }
     });
   }
@@ -103,20 +130,32 @@ class TrailBleService {
 
     _scanSubscription = fbp.FlutterBluePlus.scanResults.listen((results) {
       for (fbp.ScanResult r in results) {
-        final raw = r.advertisementData.localName;
-        if (raw.isEmpty) continue;
+        final name = r.advertisementData.localName;
+        final mfData = r.advertisementData.manufacturerData;
+
+        if (name.isEmpty || mfData.isEmpty) continue;
+        if (!mfData.containsKey(0x1234)) continue;
 
         try {
-          final data = jsonDecode(raw);
-          if (data['id'] == null || data['name'] == null) continue;
+          final bytes = mfData[0x1234]!;
+          if (bytes.length < 10) continue;
+
+          final status = bytes[0] == 1 ? 'SOS' : 'OK';
+          final latInt =
+              (bytes[1] << 24) | (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
+          final lonInt =
+              (bytes[5] << 24) | (bytes[6] << 16) | (bytes[7] << 8) | bytes[8];
+          final lat = latInt / 10000.0;
+          final lon = lonInt / 10000.0;
+          final battery = bytes[9];
 
           final member = Member(
-            deviceId: data['id'],
-            name: data['name'],
-            status: data['status'] ?? 'OK',
-            latitude: data['lat'] ?? 0.0,
-            longitude: data['lon'] ?? 0.0,
-            battery: data['battery'] ?? 0,
+            deviceId: r.device.remoteId.str,
+            name: name,
+            status: status,
+            latitude: lat,
+            longitude: lon,
+            battery: battery,
             timestamp: DateTime.now().millisecondsSinceEpoch,
           );
 
@@ -127,7 +166,49 @@ class TrailBleService {
             handleSosAlert(member);
           }
         } catch (e) {
-          // Paquete no es TrailGuard, ignorar
+          debugPrint('Error parseando BLE: $e');
+        }
+      }
+    });
+    _scanSubscription = fbp.FlutterBluePlus.scanResults.listen((results) {
+      for (fbp.ScanResult r in results) {
+        final name = r.advertisementData.localName;
+        final mfData = r.advertisementData.manufacturerData;
+
+        if (name.isEmpty || mfData.isEmpty) continue;
+        if (!mfData.containsKey(0x1234)) continue;
+
+        try {
+          final bytes = mfData[0x1234]!;
+          if (bytes.length < 10) continue;
+
+          final status = bytes[0] == 1 ? 'SOS' : 'OK';
+          final latInt =
+              (bytes[1] << 24) | (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
+          final lonInt =
+              (bytes[5] << 24) | (bytes[6] << 16) | (bytes[7] << 8) | bytes[8];
+          final lat = latInt / 10000.0;
+          final lon = lonInt / 10000.0;
+          final battery = bytes[9];
+
+          final member = Member(
+            deviceId: r.device.remoteId.str,
+            name: name,
+            status: status,
+            latitude: lat,
+            longitude: lon,
+            battery: battery,
+            timestamp: DateTime.now().millisecondsSinceEpoch,
+          );
+
+          DatabaseService.insertDetection(member);
+          onDetected(member);
+
+          if (member.status == 'SOS') {
+            handleSosAlert(member);
+          }
+        } catch (e) {
+          debugPrint('Error parseando BLE: $e');
         }
       }
     });

@@ -81,6 +81,21 @@ class _MainNavigationState extends State<MainNavigation> {
       position?.latitude ?? 0.0,
       position?.longitude ?? 0.0,
       100,
+      onStatus: (active, error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                error != null
+                    ? '❌ BLE error: $error'
+                    : '✅ BLE advertising: $active',
+              ),
+              backgroundColor: error != null ? Colors.red : Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      },
     );
 
     if (mounted) {
