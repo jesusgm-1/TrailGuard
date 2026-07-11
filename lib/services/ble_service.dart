@@ -125,15 +125,25 @@ class TrailBleService {
   }
 
   // Escanear dispositivos BLE cercanos
-  static void startScan(Function(Member) onDetected) async {
+  static void startScan(
+    Function(Member) onDetected, {
+    Function(String)? onRawDetected,
+  }) async {
     await fbp.FlutterBluePlus.startScan(timeout: const Duration(seconds: 30));
 
     _scanSubscription = fbp.FlutterBluePlus.scanResults.listen((results) {
       for (fbp.ScanResult r in results) {
-        debugPrint('BLE detectado: ${r.device.remoteId.str} | name: ${r.advertisementData.localName} | mf: ${r.advertisementData.manufacturerData}');
+        debugPrint(
+          'BLE detectado: ${r.device.remoteId.str} | name: ${r.advertisementData.localName} | mf: ${r.advertisementData.manufacturerData}',
+        );
 
         final name = r.advertisementData.localName;
         final mfData = r.advertisementData.manufacturerData;
+
+        // Reporta cualquier dispositivo BLE cercano
+        onRawDetected?.call(
+          '${name.isEmpty ? "sin nombre" : name} | mf: ${mfData.keys.toList()}',
+        );
 
         if (name.isEmpty || mfData.isEmpty) continue;
         if (!mfData.containsKey(0x1234)) continue;
@@ -221,11 +231,14 @@ class TrailBleService {
     fbp.FlutterBluePlus.stopScan();
   }
 
-  static void startContinuousScan(Function(Member) onDetected) {
-    startScan(onDetected);
+  static void startContinuousScan(
+    Function(Member) onDetected, {
+    Function(String)? onRawDetected,
+  }) {
+    startScan(onDetected, onRawDetected: onRawDetected);
     Timer.periodic(const Duration(seconds: 30), (_) {
       stopScan();
-      startScan(onDetected);
+      startScan(onDetected, onRawDetected: onRawDetected);
     });
   }
 

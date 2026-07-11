@@ -111,18 +111,31 @@ class _MainNavigationState extends State<MainNavigation> {
       await TrailBleService.startBroadcast(pos.latitude, pos.longitude, 100);
     });
 
-    TrailBleService.startContinuousScan((member) {
-      if (mounted) {
-        setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('📶 Detectado: ${member.name}'),
-            duration: const Duration(seconds: 3),
-            backgroundColor: Colors.blue,
-          ),
-        );
-      }
-    });
+    TrailBleService.startContinuousScan(
+      (member) {
+        if (mounted) {
+          setState(() {});
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('📶 TrailGuard: ${member.name} | ${member.status}'),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      onRawDetected: (info) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🔵 BLE cercano: $info'),
+              backgroundColor: Colors.grey[700],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
   }
 
   void _startMissingCheck() {
