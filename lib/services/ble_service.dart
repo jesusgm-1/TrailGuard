@@ -130,6 +130,8 @@ class TrailBleService {
 
     _scanSubscription = fbp.FlutterBluePlus.scanResults.listen((results) {
       for (fbp.ScanResult r in results) {
+        debugPrint('BLE detectado: ${r.device.remoteId.str} | name: ${r.advertisementData.localName} | mf: ${r.advertisementData.manufacturerData}');
+
         final name = r.advertisementData.localName;
         final mfData = r.advertisementData.manufacturerData;
 

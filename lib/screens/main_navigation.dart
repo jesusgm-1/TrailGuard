@@ -112,7 +112,16 @@ class _MainNavigationState extends State<MainNavigation> {
     });
 
     TrailBleService.startContinuousScan((member) {
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('📶 Detectado: ${member.name}'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
     });
   }
 
