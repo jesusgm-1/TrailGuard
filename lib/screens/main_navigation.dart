@@ -21,10 +21,11 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   bool _simulated = false;
+  String _myDeviceId = '';
 
-  final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const HomeScreen(),
-    const MapScreen(),
+    MapScreen(myDeviceId: _myDeviceId),
     const SosScreen(),
   ];
 
@@ -49,6 +50,8 @@ class _MainNavigationState extends State<MainNavigation> {
   Future<void> _startBle() async {
     final deviceId = 'DEV_${DateTime.now().millisecondsSinceEpoch}';
     TrailBleService.init(deviceId, widget.userName);
+
+    setState(() => _myDeviceId = deviceId);
 
     final position = await GpsService.getCurrentPosition();
     await DatabaseService.insertDetection(
