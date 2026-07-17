@@ -33,7 +33,6 @@ class _MainNavigationState extends State<MainNavigation> {
     super.initState();
     _requestPermissions();
     _startMissingCheck();
-    _checkBle();
     _startBle();
   }
 
@@ -45,19 +44,6 @@ class _MainNavigationState extends State<MainNavigation> {
       Permission.bluetoothConnect,
       Permission.locationWhenInUse,
     ].request();
-  }
-
-  Future<void> _checkBle() async {
-    final isSupported = await fbp.FlutterBluePlus.isSupported;
-    final adapterState = await fbp.FlutterBluePlus.adapterState.first;
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('BLE: $isSupported | Estado: $adapterState'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
   }
 
   Future<void> _startBle() async {
@@ -81,21 +67,6 @@ class _MainNavigationState extends State<MainNavigation> {
       position?.latitude ?? 0.0,
       position?.longitude ?? 0.0,
       100,
-      onStatus: (active, error) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                error != null
-                    ? '❌ BLE error: $error'
-                    : '✅ BLE advertising: $active',
-              ),
-              backgroundColor: error != null ? Colors.red : Colors.green,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      },
     );
 
     if (mounted) {
@@ -111,31 +82,9 @@ class _MainNavigationState extends State<MainNavigation> {
       await TrailBleService.startBroadcast(pos.latitude, pos.longitude, 100);
     });
 
-    TrailBleService.startContinuousScan(
-      (member) {
-        if (mounted) {
-          setState(() {});
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('📶 TrailGuard: ${member.name} | ${member.status}'),
-              backgroundColor: Colors.blue,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      },
-      onRawDetected: (info) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('🔵 BLE cercano: $info'),
-              backgroundColor: Colors.grey[700],
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-    );
+    TrailBleService.startContinuousScan((member) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _startMissingCheck() {

@@ -63,14 +63,6 @@ class TrailBleService {
   }) async {
     await initPeripheral();
 
-    peripheral.BlePeripheral.setAdvertisingStatusUpdateCallback((
-      bool advertising,
-      String? error,
-    ) {
-      debugPrint('BLE: $advertising | $error');
-      onStatus?.call(advertising, error);
-    });
-
     _broadcastTimer?.cancel();
     _broadcastTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
       final payload = jsonEncode({
