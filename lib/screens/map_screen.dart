@@ -62,20 +62,23 @@ class _MapScreenState extends State<MapScreen> {
     final spots = <ScatterSpot>[];
     for (int i = 0; i < members.length; i++) {
       final m = members[i];
-      final dLon = ((m['longitude'] as double) - myLon) * 111000; // metros aprox
+      final dLon =
+          ((m['longitude'] as double) - myLon) * 111000; // metros aprox
       final dLat = ((m['latitude'] as double) - myLat) * 111000;
-      spots.add(ScatterSpot(
-        dLon,
-        dLat,
-        dotPainter: FlDotCirclePainter(
-          radius: m['device_id'] == widget.myDeviceId ? 10 : 8,
-          color: m['device_id'] == widget.myDeviceId
-              ? Colors.black
-              : _colors[i % _colors.length],
-          strokeWidth: m['device_id'] == widget.myDeviceId ? 3 : 0,
-          strokeColor: Colors.white,
+      spots.add(
+        ScatterSpot(
+          dLon,
+          dLat,
+          dotPainter: FlDotCirclePainter(
+            radius: m['device_id'] == widget.myDeviceId ? 10 : 8,
+            color: m['device_id'] == widget.myDeviceId
+                ? Colors.black
+                : _colors[i % _colors.length],
+            strokeWidth: m['device_id'] == widget.myDeviceId ? 3 : 0,
+            strokeColor: Colors.white,
+          ),
         ),
-      ));
+      );
     }
     return spots;
   }
@@ -113,16 +116,23 @@ class _MapScreenState extends State<MapScreen> {
                 children: [
                   CircleAvatar(radius: 6, backgroundColor: Colors.black),
                   const SizedBox(width: 4),
-                  const Text('Tú', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Tú',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
               ...List.generate(members.length, (i) {
                 final m = members[i];
-                if (m['device_id'] == widget.myDeviceId) return const SizedBox();
+                if (m['device_id'] == widget.myDeviceId)
+                  return const SizedBox();
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(radius: 6, backgroundColor: _colors[i % _colors.length]),
+                    CircleAvatar(
+                      radius: 6,
+                      backgroundColor: _colors[i % _colors.length],
+                    ),
                     const SizedBox(width: 4),
                     Text(m['name']),
                   ],
@@ -133,7 +143,7 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(height: 8),
           // Indicador de escala
           Text(
-            'Radio: ${maxDist.toStringAsFixed(0)} metros',
+            'Distancia aproximada: ±${maxDist.toStringAsFixed(0)} m',
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
@@ -155,15 +165,25 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
-                    axisNameWidget: const Text('Norte ↑', style: TextStyle(fontSize: 11)),
+                    axisNameWidget: const Text(
+                      'Δ Latitud (m)',
+                      style: TextStyle(fontSize: 11),
+                    ),
                     sideTitles: SideTitles(showTitles: true, reservedSize: 40),
                   ),
                   bottomTitles: AxisTitles(
-                    axisNameWidget: const Text('Este →', style: TextStyle(fontSize: 11)),
+                    axisNameWidget: const Text(
+                      'Δ Longitud (m)',
+                      style: TextStyle(fontSize: 11),
+                    ),
                     sideTitles: SideTitles(showTitles: true, reservedSize: 30),
                   ),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                 ),
                 scatterTouchData: ScatterTouchData(
                   touchTooltipData: ScatterTouchTooltipData(
@@ -171,8 +191,11 @@ class _MapScreenState extends State<MapScreen> {
                       final idx = spots.indexOf(spot);
                       if (idx >= 0 && idx < members.length) {
                         final m = members[idx];
+                        // Calcular la distancia euclidiana desde el centro (0, 0)
                         final dist = (spot.x * spot.x + spot.y * spot.y);
-                        final distM = dist == 0 ? 0 : (dist).toStringAsFixed(0);
+                        final distM = spot.x == 0 && spot.y == 0
+                            ? '0'
+                            : '~${(spot.x * spot.x + spot.y * spot.y).abs().toStringAsFixed(0)}';
                         return ScatterTooltipItem(
                           m['device_id'] == widget.myDeviceId
                               ? 'Tú'
@@ -195,7 +218,9 @@ class _MapScreenState extends State<MapScreen> {
               final isMe = m['device_id'] == widget.myDeviceId;
               return Chip(
                 avatar: CircleAvatar(
-                  backgroundColor: isMe ? Colors.black : _colors[i % _colors.length],
+                  backgroundColor: isMe
+                      ? Colors.black
+                      : _colors[i % _colors.length],
                   child: Text(
                     isMe ? 'Yo' : m['name'][0],
                     style: const TextStyle(color: Colors.white, fontSize: 10),
@@ -228,7 +253,9 @@ class _MapScreenState extends State<MapScreen> {
           backgroundColor: Colors.green[800],
           foregroundColor: Colors.white,
         ),
-        body: const Center(child: Text('Sin datos aún. Esperando detecciones BLE...')),
+        body: const Center(
+          child: Text('Sin datos aún. Esperando detecciones BLE...'),
+        ),
       );
     }
 
